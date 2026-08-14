@@ -28,17 +28,19 @@ const dbUrl = process.env.ATLASDB_URL;
         await mongoose.connect(dbUrl);
         console.log("Connected to MongoDB");
 
-        app.listen(8080, () => {
-            console.log("Server is listening on port 8080");
+        const PORT = process.env.PORT || 8080;
+
+        app.listen(PORT, () => {
+            console.log(`Server is listening on port ${PORT}`);
         });
 
     } catch (err) {
         console.log("MongoDB connection failed:");
         console.log(err.message);
     }
-} 
-  main();
+}
 
+main();
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({extended : true}));
