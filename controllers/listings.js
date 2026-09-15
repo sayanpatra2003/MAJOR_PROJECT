@@ -51,47 +51,64 @@ module.exports.showListing = async (req, res) => {
   res.redirect("/listings");
 };*/
 
-module.exports.createListing = async (req, res) => { 
-  let url = req.file.path;
-  let filename = req.file.filename;
+module.exports.createListing = async (req, res) => {
+  try {
+    const newListing = new Listing(req.body.listing);
 
-  const newListing = new Listing(req.body.listing);
+    newListing.owner = req.user._id;
 
-  newListing.owner = req.user._id;
-  if(req.file) {
-  newListing.image = { url, filename };
+    // Upload image
+    if (req.file) {
+      newListing.image = {
+        url: req.file.path,
+        filename: req.file.filename
+      };
+    }
+
+    // GEOCODING
+    const location = `${req.body.listing.location}, ${req.body.listing.country}`;
+
+    const response = await axios.get(
+      "https://nominatim.openstreetmap.org/search",
+      {
+        params: {
+          q: location,
+          format: "json",
+          limit: 1
+        },
+        headers: {
+          "User-Agent": "Wanderlust/1.0 (sayanpatra058@gmail.com)",
+          "Accept-Language": "en"
+        }
+      }
+    );
+
+    console.log("Geocoding result:", response.data);
+
+    if (response.data.length > 0) {
+      const lat = Number(response.data[0].lat);
+      const lon = Number(response.data[0].lon);
+
+      newListing.geometry = {
+        type: "Point",
+        coordinates: [lon, lat]
+      };
+
+      console.log("Coordinates saved:", [lon, lat]);
+    } else {
+      console.log("Location not found:", location);
+    }
+
+    await newListing.save();
+
+    req.flash("success", "New Listing Created!");
+    res.redirect("/listings");
+
+  } catch (err) {
+    console.log("CREATE LISTING ERROR:", err.message);
+    res.status(500).send("Request failed. Please try again.");
   }
-  //  GEOCODING
-  let location = `${req.body.listing.location}, ${req.body.listing.country}`;
-
-  let response = await axios.get("https://nominatim.openstreetmap.org/search", {
-    params: {
-      q: location,
-      format: "json",
-      limit: 1
-    },
-       headers: {
-    "User-Agent": "wanderlust-app/1.0 (sayan@example.com)",  // must look real
-    "Accept-Language": "en"
-  }
-  });
-
-  if (response.data.length > 0) {
-    let lat = response.data[0].lat;
-    let lon = response.data[0].lon;
-
-    newListing.geometry = {
-      type: "Point",
-      coordinates: [lon, lat] // [lng, lat]
-    };
-  }
-
-  await newListing.save(); 
-
-  req.flash("success", "New Listing Created!");
-  res.redirect("/listings");
-};
-
+}
 
 
 module.exports.renderEditForm = async(req, res) => {
