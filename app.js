@@ -23,7 +23,7 @@ const userRouter = require("./routes/user.js");
 
 const dbUrl = process.env.ATLASDB_URL;
 
- async function main() {
+ /*async function main() {
     try {
         await mongoose.connect(dbUrl);
         console.log("Connected to MongoDB");
@@ -40,7 +40,29 @@ const dbUrl = process.env.ATLASDB_URL;
     }
 }
 
+main();*/
+
+async function main() {
+    try {
+        await mongoose.connect(dbUrl);
+        console.log("Connected to MongoDB");
+    } catch (err) {
+        console.log("MongoDB connection failed:");
+        console.log(err.message);
+    }
+}
+
 main();
+
+if (process.env.NODE_ENV !== "production") {
+    const PORT = process.env.PORT || 8080;
+
+    app.listen(PORT, () => {
+        console.log(`Server is listening on port ${PORT}`);
+    });
+}
+
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({extended : true}));
@@ -108,6 +130,7 @@ app.use((err, req, res, next) => {
     const {statusCode=500, message="Something went wrong!"} = err;
     res.status(statusCode).render("error", {err,message});
 });
+module.exports = app;
 
 
 
