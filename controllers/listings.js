@@ -123,18 +123,80 @@ module.exports.renderEditForm = async(req, res) => {
     res.render("listings/edit", {listing, originalImageUrl});
 };
 
-module.exports.updateListing = async (req, res) => {
+/*module.exports.updateListing = async (req, res) => {
   let { id } = req.params;
   let listing = await Listing.findByIdAndUpdate(id, {...req.body.listing}, {new: true});
 
   if(typeof req.file != "undefined") {
-  let url =req.file.path;
+  let url = req.file.path;
   let filename = req.file.filename;
   listing.image = {url, filename};
   await listing.save();
   }
   req.flash("success", "Listing Updated!");
   res.redirect(`/listings/${id}`);
+}; */
+module.exports.updateListing = async (req, res) => {
+    try {
+        let { id } = req.params;
+
+        let listing = await Listing.findByIdAndUpdate(
+            id,
+            { ...req.body.listing },
+            { new: true }
+        );
+
+        // Update image if a new image was uploaded
+        if (req.file) {
+            listing.image = {
+                url: req.file.path,
+                filename: req.file.filename
+            };
+        }
+
+        // Get latitude and longitude from location
+        const location = `${req.body.listing.location}, ${req.body.listing.country}`;
+
+        const response = await axios.get(
+            "https://nominatim.openstreetmap.org/search",
+            {
+                params: {
+                    q: location,
+                    format: "json",
+                    limit: 1
+                },
+                headers: {
+                    "User-Agent": "Wanderlust/1.0 (sayanpatra058@gmail.com)",
+                    "Accept-Language": "en"
+                }
+            }
+        );
+
+        console.log("Geocoding result:", response.data);
+
+        if (response.data.length > 0) {
+            const lat = Number(response.data[0].lat);
+            const lon = Number(response.data[0].lon);
+
+            listing.geometry = {
+                type: "Point",
+                coordinates: [lon, lat]
+            };
+
+            console.log("Coordinates saved:", [lon, lat]);
+        } else {
+            console.log("Location not found:", location);
+        }
+
+        await listing.save();
+
+        req.flash("success", "Listing Updated!");
+        res.redirect(`/listings/${id}`);
+
+    } catch (err) {
+        console.log("UPDATE LISTING ERROR:", err.message);
+        res.status(500).send("Request failed. Please try again.");
+    }
 };
 
 module.exports.destroyListing = async (req, res) => {
