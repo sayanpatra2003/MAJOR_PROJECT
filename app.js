@@ -54,13 +54,18 @@ async function main() {
 
 main();
 
-if (process.env.NODE_ENV !== "production") {
+/*if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 8080;
 
     app.listen(PORT, () => {
         console.log(`Server is listening on port ${PORT}`);
     });
-}
+} */
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is listening on port ${PORT}`);
+});
 
 
 app.set("view engine", "ejs");
